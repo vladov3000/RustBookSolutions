@@ -27,18 +27,17 @@ impl Org {
 impl fmt::Display for Org {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.map.is_empty() {
-            let res = writeln!(f, "Company is currently empty.");
-            return res;
+            return writeln!(f, "Company is currently empty.");
         }
-        let mut res = writeln!(f, "{:<20} {:<20}\n{:=<41}", "Department", "Name", "");
+
+        writeln!(f, "{:<20} {:<20}\n{:=<41}", "Department", "Name", "")?;
         for (dep, names) in &self.map {
             for name in names {
-                let res1 = writeln!(f, "{0: <20} {1: <20}", dep, name);
-                if let Error = res { res = res1 }
+                writeln!(f, "{0: <20} {1: <20}", dep, name)?;
             }
         }
 
-        res
+        Ok(())
     }
 }
 
