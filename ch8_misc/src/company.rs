@@ -1,32 +1,45 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::{self, Write};
 use regex::Regex;
+use std::fmt;
 
-pub type Org = BTreeMap<String, BTreeSet<String>>;
+pub struct Org {
+    map: BTreeMap<String, BTreeSet<String>>,
+}
 
-fn print_org(org: &Org) {
-    if org.is_empty() {
-        println!("Company is currently empty.");
-        return;
+impl Org {
+    fn new() -> Self {
+        Org { map: BTreeMap::new() }
     }
 
-    println!("{:<20} {:<20}\n{:=<41}", "Department", "Name", "");
-    for (dep, names) in org {
-        for name in names {
-            println!("{0: <20} {1: <20}", dep, name);
-        }
+    fn add_to_org(&mut self, r: &Regex, s: &str) -> Option<(String, String)> {
+        let caps = r.captures(s)?;
+        let name = caps.get(1)?.as_str().to_string();
+        let dep = caps.get(r.captures_len() - 1)?.as_str().to_string();
+
+        let res = Some((name.clone(), dep.clone()));
+        self.map.entry(dep).or_insert_with(BTreeSet::new).insert(name);
+
+        res
     }
 }
 
-fn add_to_org(org: &mut Org, r: &Regex, s: &str) -> Option<(String, String)> {
-    let caps = r.captures(s)?;
-    let name = caps.get(1)?.as_str().to_string();
-    let dep = caps.get(r.captures_len() - 1)?.as_str().to_string();
+impl fmt::Display for Org {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.map.is_empty() {
+            let res = writeln!(f, "Company is currently empty.");
+            return res;
+        }
+        let mut res = writeln!(f, "{:<20} {:<20}\n{:=<41}", "Department", "Name", "");
+        for (dep, names) in &self.map {
+            for name in names {
+                let res1 = writeln!(f, "{0: <20} {1: <20}", dep, name);
+                if let Error = res { res = res1 }
+            }
+        }
 
-    let res = Some((name.clone(), dep.clone()));
-    org.entry(dep).or_insert_with(BTreeSet::new).insert(name);
-
-    res
+        res
+    }
 }
 
 pub fn add_from_io() -> Org {
@@ -64,16 +77,15 @@ pub fn add_from_io() -> Org {
             "q" | "quit" => break,
             "a" | "add" => {
                 let reg = if &command[..] == "a" { &reg_short } else { &reg_long };
-                match add_to_org(&mut res, reg, &line) {
+                match res.add_to_org(reg, &line) {
                     None => println!("Could not parse add command."),
                     Some((name, dep)) => println!("Added {} to {}.", name, dep),
                 }
             }
-            "r" | "read" => print_org(&res),
+            "r" | "read" => println!("{}", res),
             _ => println!("Command \"{}\" not recognized", command),
         };
     }
-    println!("FINAL COMPANY:");
-    print_org(&res);
+    println!("FINAL COMPANY:\n{}", res);
     return res;
 }
